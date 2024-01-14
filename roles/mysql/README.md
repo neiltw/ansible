@@ -36,9 +36,9 @@ Slave server:
       vars:
           server_id: 2                                            # default 1
           account_password: "{{ account password }}"              # default Random
-          master_address: "{{ master IP }}"                       # default 10.110.64.100
+          master_address: "{{ master IP }}"                       # default 10.110.2.100
           mysql_password: "{{ master password }}"                 # default Random
-          slave_address: "{{  slave IP }}"                        # default 10.110.64.101
+          slave_address: "{{  slave IP }}"                        # default 10.110.2.101
           replication_password: "{{ replication Password }}"      # default Random
           #replication_master_log_file: "mysql-bin.000002"        # default Automation get master replication_master_log_file
           #replication_master_log_pos: "621"                      # default Automation get master replication_master_log_
