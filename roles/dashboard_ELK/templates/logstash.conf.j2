@@ -1,0 +1,200 @@
+input {
+  beats {
+    port => 5044
+    codec => "json"
+  }
+
+}
+
+
+filter{
+
+
+  #share to http tg
+  ruby {
+    code => "event.set('localTime', event.get('@timestamp').time.localtime + 8*60*60)"
+  }
+
+
+  # ========== 處理 JSON 編碼的日誌事件 ==========
+  if [type] == "json_logs" {
+
+
+      if [level]  =~ "ERROR" {
+          if [message] =~ "SQLException" {
+              ruby {
+              code => "
+                  if event.get('message').length > 4096
+                    event.set('tg_message', event.get('message')[0..2048]+'....' )
+                  else
+                    event.set('tg_message', event.get('message') )
+                  end
+                "
+              }
+
+            http {
+              url => 'https://api.telegram.org/{{ TELEGRAM_TOKEN }}/sendMessage'
+              verb => "POST"
+              headers => { "Content-Type" => "application/json" }
+              body => {
+                "chat_id" => "{{TELEGRAM_CHAT_ID}}"
+                "text" => "*Service*: %{service}
+*Trace*: %{trace}
+*Class*: %{class}
+*Time*: %{localTime}[0] (UTC+8)
+*URL*: [Kibana]({{ KIBANA_REMOTE_IP }}) 👈
+*Message*: %{tg_message}"
+                "parse_mode" => "Markdown"
+              }
+              body_format => "json"
+            }
+
+          }
+
+      }
+
+
+
+
+ 	# ========== Alert_ticketSender   ==========
+
+      if [message] =~ "\[Alert_ticketSender\]" {
+
+        # data too long
+        ruby {
+          code => "
+              if event.get('message').length > 4096
+                event.set('tg_message', event.get('message')[0..2048]+'....' )
+              else
+                event.set('tg_message', event.get('message') )
+              end
+            "
+        }
+
+        #send tg text contnet filter "[_*'"
+        mutate {
+          gsub => [
+            "tg_message", "\["  , "\\["  ,
+            "tg_message", "\_"  , "\\_"  ,
+            "tg_message", "\*"  , "\\*"  ,
+            "tg_message", "\`"  , "\\`"
+            ]
+
+        }
+
+
+        http {
+          url => 'https://api.telegram.org/{{ TELEGRAM_TOKEN }}/sendMessage'
+          verb => "POST"
+          headers => { "Content-Type" => "application/json" }
+          body => {
+            "chat_id" => "{{TELEGRAM_CHAT_ID}}"
+            "text" => "🆘🆘🆘🆘🆘🆘🆘🆘🆘🆘
+*Service*: %{service}
+*Trace*: %{trace}
+*Class*: %{class}
+*Time*: %{localTime}[0] (UTC+8)
+*URL*: [Kibana]({{ KIBANA_REMOTE_IP }}) 👈
+*Message*: %{tg_message}
+🆘🆘🆘🆘🆘🆘🆘🆘🆘🆘"
+            "parse_mode" => "Markdown"
+          }
+          body_format => "json"
+        }
+
+      }
+
+
+ 	# ========== Alert   ==========
+
+      if [message] =~ "\[Alert\]" {
+
+        # data too long
+        ruby {
+          code => "
+              if event.get('message').length > 4096
+                event.set('tg_message', event.get('message')[0..2048]+'....' )
+              else
+                event.set('tg_message', event.get('message') )
+              end
+            "
+        }
+
+        #send tg text contnet filter "[_*'"
+        mutate {
+          gsub => [
+            "tg_message", "\["  , "\\["  ,
+            "tg_message", "\_"  , "\\_"  ,
+            "tg_message", "\*"  , "\\*"  ,
+            "tg_message", "\`"  , "\\`"
+            ]
+
+        }
+
+
+        http {
+          url => 'https://api.telegram.org/{{ TELEGRAM_TOKEN }}/sendMessage'
+          verb => "POST"
+          headers => { "Content-Type" => "application/json" }
+          body => {
+            "chat_id" => "{{TELEGRAM_CHAT_ID}}"
+            "text" => "*Service*: %{service}
+*Trace*: %{trace}
+*Class*: %{class}
+*Time*: %{localTime}[0] (UTC+8)
+*URL*: [Kibana]({{ KIBANA_REMOTE_IP }}) 👈
+*Message*: %{tg_message}"
+            "parse_mode" => "Markdown"
+          }
+          body_format => "json"
+        }
+
+      }
+
+
+
+      mutate {
+        #rename => {
+         # "[fields][service]" => "service"
+         # "[event][timezone]" => "timezone"
+        #}
+        remove_field => [ "event","fields","host","[host][name]","agent" ,"ecs","log","original","input","type","tags","tg_message","body","headers","localTime" ]
+
+         add_field => { "data_format" => "json_logs" }
+
+      }
+
+
+  }
+
+  # ========== JSON Done  ==========
+
+
+}
+
+
+output {
+
+  stdout {
+      codec => rubydebug
+  }
+
+  if [service] == "nginx" {
+    elasticsearch {
+      hosts => ["service.elasticsearch.com:9200"]
+      index => "nginx-%{+YYYY.MM.dd}"
+    }
+  }
+
+  if [service] != "nginx" {
+     if [data_format] == "json_logs" {
+
+      elasticsearch {
+          hosts => ["service.elasticsearch.com:9200"]
+          index => "backend-%{+YYYY.MM.dd}"
+      }
+    }
+  }
+
+
+}

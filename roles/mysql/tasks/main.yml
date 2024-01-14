@@ -1,0 +1,189 @@
+---
+# tasks file for mysql
+- name: check mysql is exist
+  stat:
+    path: /usr/bin/mysql
+  register: mysql_exist
+  tags: master,slave
+
+- name: dnf install mysql
+  shell: dnf install -y @mysql && dnf install -y python3-devel mysql-devel && dnf install -y gcc
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: install modeule
+#  shell: python3  -m pip install --upgrade lib_platform && python3 -m pip install  pexpect
+  shell:  python3 -m pip install  pexpect
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: Inculde master my config
+  include_tasks: master.yml
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- name: Inculde slave my config
+  include_tasks: slave.yml
+  tags: slave
+  when: mysql_exist.stat.exists == False
+
+- name: install mysql client
+  pip:
+    name: mysqlclient
+  tags: master, slave
+  when: mysql_exist.stat.exists == False
+
+- name: Reset the root@localhost password
+  become: yes
+  expect:
+    command: mysql_secure_installation
+    responses:
+      "Press y|Y for Yes, any other key for No": 'y'
+      "Please enter 0 = LOW, 1 = MEDIUM and 2 = STRONG": "0"
+      'New password': "{{ mysql_password }}"
+      'Re-enter new password': "{{ mysql_password }}"
+      'Do you wish to continue with the password provided': 'y'
+      'Remove anonymous users': 'y'
+      "Disallow root login remotely": "y"
+      "Remove test database and access to it": "y"
+      "Reload privilege tables now": "y"
+    timeout: 1
+  register: secure_mariadb
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+  failed_when: "'... Failed!' in secure_mariadb.stdout_lines"
+
+- debug:
+    var: secure_mariadb
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: Add .my.cnf
+  template: src=my.cnf.j2 dest=/root/.my.cnf owner=root group=root mode=0600
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: Ensure root user can only login from localhost
+  mysql_user:
+    name: root
+    host: "{{ item }}"
+    password: "{{mysql_password}}"
+    check_implicit_admin: yes
+    login_user: "{{ mysql_user }}"
+    login_password: "{{mysql_password}}"
+    state: present
+  with_items:
+    - localhost
+    - 127.0.0.1
+    - ::1
+    - '%'
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: create new account
+  mysql_user:
+    name: "{{ account_user }}"
+    host: "{{ item }}"
+    password: "{{ account_password }}"
+    login_user: root
+    login_password: "{{mysql_password}}"
+    priv: '*.*:ALL'
+  with_items:
+    - '%'
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: write account password
+  shell: echo -e "{{ account_password }}" > ~/{{account_user}}_password
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: Inculde Set master replication_master
+  include_tasks: replication_master.yml
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- name: Include Set Slave replication_slave
+  include_tasks: replication_slave.yml
+  tags: slave
+  when: mysql_exist.stat.exists == False
+
+- name: Include mysql_secure_installation
+  include_tasks: mysql_secure_installation.yml
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: Update "root" user password and grant all permissions for all hosts
+  mysql_user:
+    name: root
+    host: "{{ item }}"
+    password: "{{ mysql_password }}"
+    login_user: root
+    login_password: "{{mysql_password}}"
+    priv: "*.*:ALL,GRANT"
+  with_items:
+    - '%'
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+#- name:
+#  shell: mysql -u root -p'{{ mysql_password }}' -e "show variables like '%rpl%';"  | grep rpl_semi_sync_master_enabled | awk '{print $2}'
+#  register: rpl_semi_master_sync
+#  tags: master
+#  when: mysql_exist.stat.exists == False
+#
+#- name:
+#  shell: mysql -u root -p'{{ mysql_password }}' -e "show variables like '%rpl%';"  | grep rpl_semi_sync_slave_enabled | awk '{print $2}'
+#  register: rpl_semi__slave_sync
+#  tags: slave
+#  when: mysql_exist.stat.exists == False
+
+- name: Show master replication File ;
+  shell: '{{show_binlog_file}}'
+  register: replication_master_File
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- name: Show master replication Position;
+  shell: '{{show_binlog_position}}'
+  register: replication_master_Position
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- debug:
+    var: replication_master_Position
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- name: show Mysql Password info
+  debug:
+    msg:
+      - Mysql user=root ,password = {{mysql_password}}
+      - Mysql user={{ account_user }}, password = {{account_password}}
+      - Mysql Replication SLAVE Password = {{ replication_password }}
+  tags: master,slave
+  when: mysql_exist.stat.exists == False
+
+- name: show replication info
+  debug:
+    msg:
+      - replication  master replication File  {{ get_replication_master_File }}
+      - replication  master replication File  {{ get_replication_master_Position }}
+#      - MySQL Plugin rpl_semi_sync_master_enabled = {{ rpl_semi_master_sync.stdout_lines }}
+  tags: master
+  when: mysql_exist.stat.exists == False
+
+- name: show Cluster info
+  debug:
+    msg:
+      - Cluster Sync=YES,Unsync=NO , Slave_IO_Running =  {{ slave_status_result.Replica_IO_Running }}
+      - Cluster Sync=YES,Unsync=NO , Slave_SQL_Running =  {{ slave_status_result.Replica_SQL_Running }}
+#      - Cluster Message,  Slave_SQL_Running_State =  {{ slave_status_result.Replica_IO_State }}
+#      - MySQL Plugin rpl_semi_sync_slave_enabled = {{ rpl_semi__slave_sync.stdout_lines }}
+  tags: slave
+  when: mysql_exist.stat.exists == False
+
+- name: del /root/.my.cnf
+  shell: rm -rf /root/.my.cnf
+  tags: master,slave
+  when: mysql_exist.stat.exists == False

@@ -1,0 +1,12 @@
+---
+- name: Automation Install elk
+  become: true
+  hosts: "{{ myhosts }}"
+  gather_facts: yes
+  vars:
+    ES_IP: 10.110.2.30
+    KIBANA_IP: 10.110.2.30
+    LOGSTASH_IP: 10.110.2.30
+
+  roles:
+    - dashboard_ELK

@@ -1,0 +1,17 @@
+
+- name: REPLICATION SLAVE replication
+  mysql_user:
+    name: '{{ replication_user }}'
+    host: '%'
+    password: '{{ replication_password }}'
+    login_user: root
+    login_password: '{{ mysql_password }}'
+    priv: '*.*:REPLICATION SLAVE'
+    state: present
+  tags: master
+
+- name: create replication_password to /root/replication_password
+  shell: echo -e "{{replication_password}}" > ~/replication_password.success
+  args:
+    creates: ~/replication_password.success
+  tags: master

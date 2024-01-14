@@ -1,0 +1,43 @@
+version: "3.5"
+x-logging:
+  &default-logging
+  driver: json-file
+  options:
+    max-size: '50m'
+    max-file: '5'
+x-sysctls:
+  &default-sysctls
+  - net.core.somaxconn=1024
+x-ulimits:
+  &default-ulimits
+  nproc: 65535
+  nofile:
+    soft: 65535
+    hard: 65535
+
+services:
+  kibana:
+    image: {{ KIBANA_IMAGE }}:{{ KIBANA_TAG }}
+    container_name: kibana
+
+    environment:
+      - LANG=en_US.UTF-8
+      - SERVER_NAME:{{ KIBANA_SERVER_NAME }}
+
+
+    restart: always
+    volumes:
+      - ${PWD}/data:/usr/share/kibana/data
+      - ${PWD}/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+
+    ports:
+      - 5601:5601
+
+    extra_hosts:
+      - elasticsearch:{{ ES_IP }}
+      - logstash:{{ LOGSTASH_IP }}
+
+
+    logging: *default-logging
+    sysctls: *default-sysctls
+    ulimits: *default-ulimits

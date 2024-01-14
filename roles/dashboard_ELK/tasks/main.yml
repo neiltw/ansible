@@ -1,0 +1,50 @@
+---
+# tasks file for elasticsearch_kibana
+- name: install es
+  ansible.builtin.include_role:
+    name: dashboard_ELK
+    tasks_from: es
+    apply:
+      tags:
+        - elk
+        - elastic
+  tags:
+    - elk
+    - elastic
+
+- name: install logstash
+  ansible.builtin.include_role:
+    name: dashboard_ELK
+    tasks_from: logstash
+    apply:
+      tags:
+        - elk
+        - logstash
+  tags:
+    - elk
+    - logstash
+
+- name: install kibana
+  ansible.builtin.include_role:
+    name: dashboard_ELK
+    tasks_from: kibana
+  tags:
+    - elk
+    - kibana
+
+- name: show container
+  shell: /usr/bin/docker ps
+  register: container
+  tags:
+    - elk
+    - kibana
+    - logstash
+    - elastic
+
+- debug:
+    var: container
+  tags:
+    - elk
+    - kibana
+    - logstash
+    - elastic

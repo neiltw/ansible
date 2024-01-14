@@ -1,0 +1,15 @@
+---
+- name: Automation Install master , default create user admin_root
+  become: true
+  hosts: "{{ myhosts }}"
+  gather_facts: yes
+  vars:
+    server_id: 1
+
+
+  roles:
+    - role: removeMysql
+      tags: always
+    - mysql
+
+

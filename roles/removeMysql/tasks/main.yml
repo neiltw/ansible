@@ -1,0 +1,33 @@
+
+- name: are you remove mysql databases
+  pause:
+#    prompt: "Are you remove {{ansible_hostname}},{{ansible_all_ipv4_addresses}}  Mysql Databases (yes/no)? "
+    prompt: "Are you remove Mysql Databases (yes/no)? "
+  register: my_pause
+  ignore_errors: true
+
+- name: Remove Mysql
+  shell: dnf remove -y mysql* && dnf remove -y mysql
+
+- name: Revmoe All Mysql Installed data and databases.
+  shell: |
+    yum remove -y mysql*
+    rm -rf /usr/bin/mysql
+    rm -rf /var/lib/mysql/*
+    rm -rf /etc/my.cnf
+    rm -rf /etc/my.cnf.rpmsave
+    rm -rf /etc/my.cnf.d/
+    rm -rf /var/log/mysqld.log
+    rm -rf /usr/share/mysql
+    rm -rf ~/.my.cnf
+    rm -rf .mysql_history
+    rm -rf /root/root_pw_reset.success
+    rm -rf /var/log/mysqld.log
+    rm -rf /root/replication_password.success
+    rm -rf $(find / | grep mysql )
+  ignore_errors: true
+  when: my_pause.user_input | bool
+
+- debug:
+    msg: remove success
+  when: my_pause.user_input | bool

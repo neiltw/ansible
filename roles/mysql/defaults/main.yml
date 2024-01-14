@@ -1,0 +1,36 @@
+---
+# defaults file for mysql
+mysql_user_home: /root
+mysql_user: root
+#mysql_password: '!{{ mysql_p1.ansible_facts.my_pass }}/^{{ mysql_p2.ansible_facts.my_pass }}'
+mysql_password: '1qaz@WSX'
+
+
+mysql_config_file: /etc/my.cnf.d/mysql-server.cnf
+table_name: test
+server_id: 1
+mysql_config_include_dir: /etc/my.cnf.d
+#replication_password: '!{{ replication_pw1.ansible_facts.my_pass }}/^{{ replication_pw2.ansible_facts.my_pass }}'
+
+show_binlog_file: "mysql -u root -p'{{mysql_password}}'  -e 'show master status' | grep bin | awk '{print $1}' "
+show_binlog_position: "mysql -u root -p'{{mysql_password}}'  -e 'show master status' | grep bin | awk '{print $2}' "
+
+get_replication_master_File: "{{ replication_master_File.stdout_lines }}"
+get_replication_master_Position: "{{ replication_master_Position.stdout_lines }}"
+
+master_address: 172.17.0.2
+slave_address: 172.17.0.3
+replication_user: replication
+replication_password: 'Ce7TwePN#b5&xQM6FT'
+
+replication_master_log_file: "{{mysql_repliation.File}}"
+replication_master_log_pos:  "{{mysql_repliation.Position}}"
+
+account_user: admin_root
+#account_password: '!{{ account_p1.ansible_facts.my_pass }}/^{{ account_p2.ansible_facts.my_pass }}'
+account_password: 'hrVqu4eY!#Wf9gY6Vc'
+
+# service 4core 8RAM
+INNODB_BUFFER_MEMORY:  6G
+
+SLAVE_WORKERS: 8

@@ -1,0 +1,91 @@
+---
+- name: pull es image
+  shell: docker pull {{ ES_IMAGE }}:{{ ES_TAG }}
+  tags:
+    - elk
+    - elastic
+- name: Create a directory es if it does not exist
+  ansible.builtin.file:
+    path: "{{ ES_PATH }}"
+    state: directory
+  tags:
+    - elk
+    - elastic
+- name: Create a {{ ES_PATH }}/config directory config if it does not exist
+  ansible.builtin.file:
+    path: "{{ ES_PATH }}/config"
+    state: directory
+  tags:
+    - elk
+    - elastic
+- name: Create a data directory config if it does not exist
+  ansible.builtin.file:
+    path: "{{ ES_PATH }}/data"
+    state: directory
+  tags:
+    - elk
+    - elastic
+- name: Create a logs directory config if it does not exist
+  ansible.builtin.file:
+    path: "{{ ES_PATH }}/logs"
+    state: directory
+  tags:
+    - elk
+    - elastic
+- name: change data/ logs/ folder permisstion
+  ansible.builtin.shell:
+    cmd: chown -R 1000:root data/ logs/
+    chdir: "{{ ES_PATH }}"
+  tags:
+    - elk
+    - elastic
+- name: Copy elasticsearch.yml to {{ ES_PATH }}/config
+  template:
+    src: elasticsearch.yml.j2
+    dest: "{{ ES_PATH }}/config/elasticsearch.yml"
+    mode: 0644
+  tags:
+    - elk
+    - elastic
+- name: Copy docker-compose.yml to "{{ ES_PATH }}"
+  template:
+    src: docker-compose-es.yml.j2
+    dest: "{{ ES_PATH }}/docker-compose.yml"
+    mode: 0644
+  tags:
+    - elk
+    - elastic
+- name: check vm.max_map_count
+  shell: grep vm.max_map_count /etc/sysctl.conf | wc -l
+  register: result
+- debug:
+    var: result
+  tags:
+    - elk
+    - elastic
+- name: set vm.max_map_count to /etc/sysctl.conf
+  shell: echo vm.max_map_count=262144 >> /etc/sysctl.conf
+  when: result.stdout == "0"
+  tags:
+    - elk
+    - elastic
+- name: set vm.max_map_count to 262144 in sysctl
+  sysctl: name={{ item.key }} value={{ item.value }}
+  with_items:
+    - { key: "vm.max_map_count", value: "262144" }
+  tags:
+    - elk
+    - elastic
+- name: run docker-compose
+  ansible.builtin.shell:
+    cmd: /usr/local/bin/docker-compose up -d --force-recreate
+    chdir: "{{ ES_PATH }}"
+  register: es_status
+  tags:
+    - elk
+    - elastic
+- ansible.builtin.debug:
+    var: es_status
+  tags:
+    - elk
+    - elastic

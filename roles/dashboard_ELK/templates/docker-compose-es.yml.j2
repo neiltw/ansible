@@ -1,0 +1,50 @@
+version: "3.5"
+x-logging:
+  &default-logging
+  driver: json-file
+  options:
+    max-size: '50m'
+    max-file: '5'
+x-sysctls:
+  &default-sysctls
+  - net.core.somaxconn=1024
+x-ulimits:
+  &default-ulimits
+  memlock:
+    soft: -1
+    hard: -1
+  nproc: 65535
+  nofile:
+    soft: 65535
+    hard: 65535
+
+services:
+  elasticsearch:
+    image: {{ ES_IMAGE }}:{{ ES_TAG }}
+    container_name: elasticsearch
+
+    environment:
+      - LANG=en_US.UTF-8
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx2048m"
+      - bootstrap.memory_lock=true
+
+    # user: root
+    restart: always
+
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+    volumes:
+      - ${PWD}/data:/usr/share/elasticsearch/data
+      - ${PWD}/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ${PWD}/logs:/usr/share/elasticsearch/logs
+
+    extra_hosts:
+      - logstash:{{ LOGSTASH_IP }}
+      - kibana:{{ KIBANA_IP }}
+
+    logging: *default-logging
+    sysctls: *default-sysctls
+    ulimits: *default-ulimits

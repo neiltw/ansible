@@ -1,0 +1,26 @@
+---
+# defaults file for elasticsearch_kibana
+ES_IMAGE: service-nexus.com:15000/elasticsearch
+ES_TAG: 1.0.0
+ES_PATH: /opt/elasticsearch
+ES_IP: 10.110.2.41
+ES_NODE_NAME: service
+ES_PORT: 9200
+
+KIBANA_IMAGE: service-nexus.com:15000/kibana
+KIBANA_TAG: 1.0.0
+KIBANA_PATH: /opt/kibana
+KIBANA_IP: 10.110.2.41
+KIBANA_SERVER_NAME: service-kibana
+KIBANA_REMOTE_IP: 'http://{{KIBANA_IP}}:8081/app/discover#/view/'
+
+LOGSTASH_IMAGE: service-nexus.com:15000/logstash
+LOGSTASH_TAG: 1.0.1
+LOGSTASH_PATH: /opt/logstash
+LOGSTASH_IP: 10.110.2.41
+
+TELEGRAM_TOKEN: ""
+TELEGRAM_CHAT_ID: "" #dev 服務器通知
+TELEGRAM_DICTIONARY_CHAT_ID: "" #dev 字典通知
+NAME_ID: service
+

@@ -1,0 +1,14 @@
+---
+DOCKER_NETWORK_IP:
+    admin: 192.168.20.21
+    file: 192.168.20.31
+    ticket: 192.168.20.41
+    gateway-fe: 192.168.20.51
+
+
+PORT_OUT:
+    spring_admin: 8000
+    admin: 8011
+    file: 8021
+    ticket: 8031
+    gateway-fe: 8141

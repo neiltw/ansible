@@ -1,0 +1,42 @@
+
+- name: Restart mysql server
+  shell: systemctl restart mysqld.service
+  tags: slave
+
+- name: "MySQL | Get master file and position "
+  community.mysql.mysql_replication:
+    mode: getprimary
+  register: mysql_repliation
+  tags: slave
+
+- debug:
+    var: mysql_repliation.File ,mysql_repliation.Position
+  tags: slave
+
+- name: MySQL | Change Master Status
+  command: "
+      /usr/bin/mysql -u root -p'{{mysql_password}}' -e
+      \"
+      STOP SLAVE;
+      CHANGE MASTER TO MASTER_HOST='{{ master_address }}', MASTER_USER='{{ replication_user }}', MASTER_PASSWORD='{{ replication_password }}', MASTER_LOG_FILE='{{ replication_master_log_file }}', MASTER_LOG_POS = {{ replication_master_log_pos }};
+      START SLAVE;
+      \"
+    "
+  tags: slave
+
+- name: Check slave status using
+  mysql_replication:
+    mode: getreplica
+    login_user: root
+    login_password: '{{ mysql_password }}'
+  register: slave_status_result
+  tags: slave
+
+- name: show slave status
+  debug:
+    var: slave_status_result
+  tags: slave
+
+#- name: Slave Systemctl Start mysqld
+#  shell: systemctl restart mysqld
+#  tags: slave

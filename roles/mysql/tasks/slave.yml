@@ -1,0 +1,36 @@
+- name: Slave Copy my.cnf slave MySQL configuration.
+  template:
+    src: my.cnf.slave.j2
+    dest: "{{ mysql_config_file }}"
+    owner: root
+    group: root
+    mode: 0644
+  tags: slave
+  # notify: Restart mysql
+
+- name: Slave Verify mysql include directory exists.
+  file:
+    path: "{{ mysql_config_include_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  tags: slave
+
+#- name: disable firewalld
+#  shell: systemctl disable firewalld
+#  args:
+#    warn: False
+#  ignore_errors: true
+#  tags: slave
+#
+#- name: stop firewalld
+#  shell: systemctl stop firewalld
+
+- name: Slave Systemctl Start mysqld
+  shell: systemctl restart mysqld.service
+  tags: slave
+
+- name: Master Systemctl enable mysqld
+  shell: systemctl enable mysqld.service
+  tags: slave

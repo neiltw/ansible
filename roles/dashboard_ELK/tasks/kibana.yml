@@ -1,0 +1,56 @@
+---
+- name: pull kibana image
+  shell: docker pull {{ KIBANA_IMAGE }}:{{ KIBANA_TAG }}
+  tags:
+    - elk
+    - kibana
+- name: Create a {{ KIBANA_PATH }} directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ KIBANA_PATH }}"
+    state: directory
+  tags:
+    - elk
+    - kibana
+- name: Create a {{ KIBANA_PATH }}/config directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ KIBANA_PATH }}/config"
+    state: directory
+  tags:
+    - elk
+    - kibana
+- name: Copy docker-compose.yml to {{ KIBANA_PATH }}
+  template:
+    src: docker-compose-kibana.yml.j2
+    dest: "{{ KIBANA_PATH }}/docker-compose.yml"
+    mode: 0644
+  tags:
+    - elk
+    - kibana
+- name: Copy kibana.yml to {{ KIBANA_PATH }}/config
+  template:
+    src: kibana.yml.j2
+    dest: "{{ KIBANA_PATH }}/config/kibana.yml"
+    mode: 0644
+  tags:
+    - elk
+    - kibana
+- name: run docker-compose
+  ansible.builtin.shell:
+    cmd: /usr/local/bin/docker-compose up -d --force-recreate
+    chdir: "{{ KIBANA_PATH }}"
+  register: kibana_status
+  tags:
+    - elk
+    - kibana
+- ansible.builtin.debug:
+    var: kibana_status
+  tags:
+    - elk
+    - kibana
+- name: change chown permission read/write
+  ansible.builtin.shell:
+    cmd: chown -R 1000:1000 data/
+    chdir: "{{ KIBANA_PATH }}"
+  tags:
+    - elk
+    - kibana

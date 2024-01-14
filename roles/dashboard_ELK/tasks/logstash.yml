@@ -1,0 +1,65 @@
+---
+- name: pull logstash image
+  shell: docker pull {{ LOGSTASH_IMAGE }}:{{ LOGSTASH_TAG }}
+  tags:
+    - elk
+    - logstash
+- name: Create a {{ LOGSTASH_PATH }} directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ LOGSTASH_PATH }}"
+    state: directory
+  tags:
+    - elk
+    - logstash
+- name: Create a {{ LOGSTASH_PATH }}/config directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ LOGSTASH_PATH }}/config"
+    state: directory
+  tags:
+    - elk
+    - logstash
+- name: Copy docker-compose.yml to {{ LOGSTASH_PATH }}
+  template:
+    src: docker-compose-logstash.yml.j2
+    dest: "{{ LOGSTASH_PATH }}/docker-compose.yml"
+    mode: 0644
+  tags:
+    - elk
+    - logstash
+- name: Copy logstash.conf to {{ LOGSTASH_PATH }}
+  template:
+    src: logstash.conf.j2
+    dest: "{{ LOGSTASH_PATH }}/config/logstash.conf"
+    mode: 0644
+  tags:
+    - elk
+    - logstash
+- name: Copy logstash.yml to {{ LOGSTASH_PATH }}
+  template:
+    src: logstash.yml.j2
+    dest: "{{ LOGSTASH_PATH }}/config/logstash.yml"
+    mode: 0644
+  tags:
+    - elk
+    - logstash
+- name: Copy pipelines.yml.yml to {{ LOGSTASH_PATH }}
+  template:
+    src: pipelines.yml.j2
+    dest: "{{ LOGSTASH_PATH }}/config/pipelines.yml"
+    mode: 0644
+  tags:
+    - elk
+    - logstash
+- name: run docker-compose
+  ansible.builtin.shell:
+    cmd: /usr/local/bin/docker-compose up -d --force-recreate
+    chdir: "{{ LOGSTASH_PATH }}"
+  register: logstash_status
+  tags:
+    - elk
+    - logstash
+- ansible.builtin.debug:
+    var: logstash_status
+  tags:
+    - elk
+    - logstash

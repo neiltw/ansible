@@ -1,0 +1,13 @@
+http.host: "0.0.0.0"
+queue.max_bytes: 2gb
+
+node.name: {{ NAME_ID }}
+log.level: info
+
+pipeline.batch.size: 500
+pipeline.batch.delay: 5
+
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch.hosts: [ "http://service.elasticsearch.com:9200" ]
+
+
